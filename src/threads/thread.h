@@ -87,6 +87,7 @@ struct thread {
     char name[16]; /* Name (for debugging purposes). */
     uint8_t *stack; /* Saved stack pointer. */
     int priority; /* Priority. */
+    int temp_priority;
     struct list_elem allelem; /* List element for all threads list. */
 
     /* Shared between thread.c and sempahore.c. */
@@ -137,7 +138,6 @@ void thread_set_nice(int);
 int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
 
-/* Added */
-
+void thread_should_preempt(void);
 
 #endif /* threads/thread.h */

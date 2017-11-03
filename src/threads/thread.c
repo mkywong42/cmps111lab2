@@ -106,6 +106,11 @@ static void schedule(void);
 void thread_schedule_tail(struct thread *prev);
 static tid_t allocate_tid(void);
 
+/* Added */
+static bool priority_value_more (const struct list_elem *, const struct list_elem *,
+                        void *);
+/* End Added */
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -244,6 +249,12 @@ thread_create(const char *name, int priority,
     /* Add to run queue. */
     thread_unblock(t);
 
+    /* changed */
+
+    thread_should_preempt();
+
+    /* end changed */
+
     return tid;
 }
 
@@ -283,7 +294,8 @@ thread_unblock(struct thread *t)
 
     old_level = intr_disable();
     ASSERT(t->status == THREAD_BLOCKED);
-    list_push_back(&ready_list, &t->elem);
+    //list_push_back(&ready_list, &t->elem);
+    list_insert_ordered (&ready_list, &t->elem, priority_value_more, NULL);
     t->status = THREAD_READY;
     intr_set_level(old_level);
 }
@@ -353,8 +365,11 @@ thread_yield(void)
     ASSERT(!intr_context());
 
     old_level = intr_disable();
-    if (cur != idle_thread)
-        list_push_back(&ready_list, &cur->elem);
+    if (cur != idle_thread){
+        //list_push_back(&ready_list, &cur->elem);
+// printf("Inserting in yield\n");
+        list_insert_ordered(&ready_list, &cur->elem, priority_value_more, NULL);
+    }
     cur->status = THREAD_READY;
     schedule();
     intr_set_level(old_level);
@@ -380,7 +395,16 @@ thread_foreach(thread_action_func *func, void *aux)
 void
 thread_set_priority(int new_priority)
 {
-    thread_current()->priority = new_priority;
+    enum intr_level old_level = intr_disable();
+    struct thread *curr = thread_current();
+    int old_priority = curr->priority;
+    curr->temp_priority = new_priority;
+    
+    if(new_priority < old_priority){
+        curr->priority = new_priority;
+        thread_should_preempt();
+    }
+    intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -504,6 +528,7 @@ init_thread(struct thread *t, const char *name, int priority)
     strlcpy(t->name, name, sizeof t->name);
     t->stack = (uint8_t *) t + PGSIZE;
     t->priority = priority;
+    t->temp_priority = priority;
     t->magic = THREAD_MAGIC;
     list_push_back(&all_list, &t->allelem);
 }
@@ -623,3 +648,31 @@ allocate_tid(void)
  * Used by switch.S, which can't figure it out on its own. */
 char *rguid = 0;
 uint32_t thread_stack_ofs = offsetof(struct thread, stack);
+
+/* Added */
+
+/* Returns true if priority of A is more than priority B, false
+   otherwise. */
+static bool
+priority_value_more (const struct list_elem *a_, const struct list_elem *b_,
+            void *aux UNUSED) 
+{
+    struct thread *a = list_entry (a_, struct thread, elem);
+    struct thread *b = list_entry (b_, struct thread, elem);
+
+printf("elem priority: %d\n", list_entry (a_, struct thread, elem)->priority);
+printf("e priority: %d\n",list_entry (b_, struct thread, elem)->priority);
+printf("result is: %d\n", a->priority > b->priority);
+   return a->priority > b->priority;
+
+}
+
+void thread_should_preempt(void){
+    enum intr_level old_level = intr_disable();
+    if(!list_empty(&ready_list) && thread_current()->priority < list_entry(list_front(&ready_list),struct thread, elem)->priority){
+printf("preempting because current priority: %d is less than list entry priority: %d\n",thread_current()->priority, list_entry(list_front(&ready_list),struct thread, elem)->priority);
+        thread_yield();
+    }
+    intr_set_level(old_level);
+}
+/* End Added */

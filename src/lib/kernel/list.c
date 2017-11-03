@@ -452,10 +452,14 @@ list_insert_ordered (struct list *list, struct list_elem *elem,
   ASSERT (list != NULL);
   ASSERT (elem != NULL);
   ASSERT (less != NULL);
-
-  for (e = list_begin (list); e != list_end (list); e = list_next (e))
-    if (less (elem, e, aux))
+int count = 0;
+  for (e = list_begin (list); e != list_end (list); e = list_next (e)){
+    if (less (elem, e, aux)){
+printf("Inserting at position %d\n", count);
       break;
+    }
+count++;
+  }
   return list_insert (e, elem);
 }
 

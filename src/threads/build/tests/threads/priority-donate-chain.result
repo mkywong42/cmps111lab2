@@ -1,0 +1,5 @@
+FAIL
+Kernel panic in run: PANIC at ../../threads/lock.c:118 in lock_release(): assertion `lock != NULL' failed.
+Call stack: 0xc0027563
+Translation of call stack:
+0xc0027563: debug_panic (.../../lib/kernel/debug.c:38)
