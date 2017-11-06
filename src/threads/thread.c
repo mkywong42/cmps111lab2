@@ -106,10 +106,6 @@ static void schedule(void);
 void thread_schedule_tail(struct thread *prev);
 static tid_t allocate_tid(void);
 
-/* Added */
-static bool priority_value_more (const struct list_elem *, const struct list_elem *,
-                        void *);
-/* End Added */
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -400,10 +396,11 @@ thread_set_priority(int new_priority)
     int old_priority = curr->priority;
     curr->temp_priority = new_priority;
     
-    if(new_priority < old_priority){
+    // if(new_priority < old_priority){
         curr->priority = new_priority;
+        list_sort(&ready_list, priority_value_more, NULL);
         thread_should_preempt();
-    }
+    // }
     intr_set_level(old_level);
 }
 
@@ -653,24 +650,24 @@ uint32_t thread_stack_ofs = offsetof(struct thread, stack);
 
 /* Returns true if priority of A is more than priority B, false
    otherwise. */
-static bool
+bool
 priority_value_more (const struct list_elem *a_, const struct list_elem *b_,
             void *aux UNUSED) 
 {
     struct thread *a = list_entry (a_, struct thread, elem);
     struct thread *b = list_entry (b_, struct thread, elem);
 
-printf("elem priority: %d\n", list_entry (a_, struct thread, elem)->priority);
-printf("e priority: %d\n",list_entry (b_, struct thread, elem)->priority);
-printf("result is: %d\n", a->priority > b->priority);
+// printf("elem priority: %d\n", list_entry (a_, struct thread, elem)->priority);
+// printf("e priority: %d\n",list_entry (b_, struct thread, elem)->priority);
+// printf("result is: %d\n", a->priority > b->priority);
    return a->priority > b->priority;
-
 }
 
 void thread_should_preempt(void){
+// printf("checking to see if should preempt\n");
     enum intr_level old_level = intr_disable();
-    if(!list_empty(&ready_list) && thread_current()->priority < list_entry(list_front(&ready_list),struct thread, elem)->priority){
-printf("preempting because current priority: %d is less than list entry priority: %d\n",thread_current()->priority, list_entry(list_front(&ready_list),struct thread, elem)->priority);
+    if(!list_empty(&ready_list) && thread_current()->priority <= list_entry(list_front(&ready_list),struct thread, elem)->priority){
+// printf("preempting because current priority: %d is less than list entry priority: %d\n",thread_current()->priority, list_entry(list_front(&ready_list),struct thread, elem)->priority);
         thread_yield();
     }
     intr_set_level(old_level);

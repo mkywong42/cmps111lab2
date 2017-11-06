@@ -138,6 +138,11 @@ void thread_set_nice(int);
 int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
 
+/* Added */
+bool priority_value_more (const struct list_elem *, const struct list_elem *,
+                        void *);
 void thread_should_preempt(void);
+
+/* End Added */
 
 #endif /* threads/thread.h */
