@@ -60,6 +60,7 @@ lock_init(struct lock *lock)
     ASSERT(lock != NULL);
 
     lock->holder = NULL;
+    lock->largest_priority = 0;
     semaphore_init(&lock->semaphore, 1);
 }
 
@@ -88,7 +89,7 @@ lock_acquire(struct lock *lock)
 
     thread_get_lock(lock);
     lock->holder = thread_current();
-    
+
     intr_set_level(old_level);
 }
 

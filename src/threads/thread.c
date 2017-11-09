@@ -396,9 +396,12 @@ thread_get_lock (struct lock *target_lock)
     struct thread *t = thread_current();
     list_push_back(&t->held_locks, &target_lock->elem); //might need to change
     //might need to add more later
-    if(target_lock->largest_priority > t->priority){
-        t->priority = target_lock -> largest_priority;
-        thread_should_preempt();
+    // if(target_lock->largest_priority > t->priority){
+    //     t->priority = target_lock -> largest_priority;
+    //     thread_should_preempt();
+    // }
+    if(t->priority > target_lock->largest_priority){
+        target_lock->largest_priority = t->priority;
     }
     intr_set_level(old_level);
 }   
@@ -409,6 +412,9 @@ thread_remove_lock(struct lock *target_lock)
     enum intr_level old_level = intr_disable();
     list_remove(&target_lock->elem);
     //might need to add later
+    if(thread_current()->temp_priority != thread_current()->priority){
+        thread_current()->priority = thread_current()->temp_priority;
+    }
     intr_set_level(old_level);
 }
 
@@ -421,6 +427,7 @@ thread_set_priority(int new_priority)
     int old_priority = curr->priority;
     curr->temp_priority = new_priority;
     
+    //may need to update locks largest priority
     // if(new_priority < old_priority){
         curr->priority = new_priority;
         list_sort(&ready_list, priority_value_more, NULL);
@@ -699,10 +706,13 @@ void thread_should_preempt(void){
     intr_set_level(old_level);
 }
 
-
+// 
 void thread_donate_priority(struct thread *receiver){
     enum intr_level old_level = intr_disable();
+// printf("%s is donating to %s\n",thread_name(), receiver->name);
+// printf("before donation: %d\n", receiver->priority);
     thread_set_donation_priority(receiver);
+// printf("after donation: %d\n", receiver->priority);
     if(receiver->status == THREAD_READY){
         list_remove(&receiver->elem);
         list_insert_ordered(&ready_list, &receiver->elem, priority_value_more, NULL);
@@ -719,13 +729,18 @@ void thread_set_donation_priority(struct thread *receiver)
     enum intr_level old_level = intr_disable();
     int temp_priority;
     int new_priority = receiver->temp_priority;
+    if(thread_current()->priority > new_priority){
+        new_priority = thread_current()->priority;
+    }
     if(!list_empty(&receiver->held_locks)){
         list_sort(&receiver->held_locks, locks_compare, NULL);
         temp_priority = list_entry(list_front(&receiver->held_locks), struct lock, elem)->largest_priority;
+// printf("temp priority: %d\n", temp_priority);
         if(temp_priority > new_priority){
             new_priority = temp_priority;
         }
     }
+    receiver->temp_priority = receiver->priority;
     receiver->priority = new_priority;
     intr_set_level(old_level);
 }
