@@ -4,4 +4,4 @@ tests/threads/priority-donate-condvar.o: \
  ../../lib/stddef.h ../../lib/stdint.h ../../lib/kernel/stdio.h \
  ../../tests/threads/tests.h ../../threads/init.h ../../threads/condvar.h \
  ../../threads/semaphore.h ../../lib/kernel/list.h ../../threads/lock.h \
- ../../threads/thread.h
+ ../../threads/thread.h ../../threads/lock.h

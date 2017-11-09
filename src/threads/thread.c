@@ -120,6 +120,8 @@ static tid_t allocate_tid(void);
 
    It is not safe to call thread_current() until this function
    finishes. */
+
+
 void
 thread_init(void)
 {
@@ -387,6 +389,29 @@ thread_foreach(thread_action_func *func, void *aux)
     }
 }
 
+void 
+thread_get_lock (struct lock *target_lock)
+{
+    enum intr_level old_level = intr_disable();
+    struct thread *t = thread_current();
+    list_push_back(&t->held_locks, &target_lock->elem); //might need to change
+    //might need to add more later
+    if(target_lock->largest_priority > t->priority){
+        t->priority = target_lock -> largest_priority;
+        thread_should_preempt();
+    }
+    intr_set_level(old_level);
+}   
+
+void 
+thread_remove_lock(struct lock *target_lock)
+{
+    enum intr_level old_level = intr_disable();
+    list_remove(&target_lock->elem);
+    //might need to add later
+    intr_set_level(old_level);
+}
+
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority(int new_priority)
@@ -527,6 +552,7 @@ init_thread(struct thread *t, const char *name, int priority)
     t->priority = priority;
     t->temp_priority = priority;
     t->magic = THREAD_MAGIC;
+    list_init(&t->held_locks);
     list_push_back(&all_list, &t->allelem);
 }
 
@@ -657,12 +683,12 @@ priority_value_more (const struct list_elem *a_, const struct list_elem *b_,
     struct thread *a = list_entry (a_, struct thread, elem);
     struct thread *b = list_entry (b_, struct thread, elem);
 
-// printf("elem priority: %d\n", list_entry (a_, struct thread, elem)->priority);
-// printf("e priority: %d\n",list_entry (b_, struct thread, elem)->priority);
-// printf("result is: %d\n", a->priority > b->priority);
    return a->priority > b->priority;
 }
-
+/* Checks to see if preemption should take place
+*  If preemption should take place, the current thread yields the CPU
+*  Function does not allow interrupts during execution
+*/
 void thread_should_preempt(void){
 // printf("checking to see if should preempt\n");
     enum intr_level old_level = intr_disable();
@@ -672,4 +698,37 @@ void thread_should_preempt(void){
     }
     intr_set_level(old_level);
 }
+
+
+void thread_donate_priority(struct thread *receiver){
+    enum intr_level old_level = intr_disable();
+    thread_set_donation_priority(receiver);
+    if(receiver->status == THREAD_READY){
+        list_remove(&receiver->elem);
+        list_insert_ordered(&ready_list, &receiver->elem, priority_value_more, NULL);
+    }
+    intr_set_level(old_level);
+}
+
+/*
+*  Sets the new priority of the thread based on the largest priority
+*  of the list of locks that the thread holds
+*/
+void thread_set_donation_priority(struct thread *receiver)
+{
+    enum intr_level old_level = intr_disable();
+    int temp_priority;
+    int new_priority = receiver->temp_priority;
+    if(!list_empty(&receiver->held_locks)){
+        list_sort(&receiver->held_locks, locks_compare, NULL);
+        temp_priority = list_entry(list_front(&receiver->held_locks), struct lock, elem)->largest_priority;
+        if(temp_priority > new_priority){
+            new_priority = temp_priority;
+        }
+    }
+    receiver->priority = new_priority;
+    intr_set_level(old_level);
+}
+
+
 /* End Added */

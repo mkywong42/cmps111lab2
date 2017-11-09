@@ -14,4 +14,11 @@ void condvar_wait(struct condvar *, struct lock *);
 void condvar_signal(struct condvar *, struct lock *);
 void condvar_broadcast(struct condvar *, struct lock *);
 
+/* added */
+bool
+condvar_priority_more (const struct list_elem *a_, const struct list_elem *b_,
+            void *aux UNUSED);
+
+/* end added*/
+
 #endif /* UCSC CMPS111 */

@@ -1,11 +1,11 @@
-qemu-system-x86_64 -hda /tmp/u5laBQeUDD.dsk -m 4 -net none -nographic -monitor null
+qemu-system-x86_64 -hda /tmp/TzzJXC3nWD.dsk -m 4 -net none -nographic -monitor null
 PiLo hda1
 Loading..........
 Kernel command line: -q run priority-donate-chain
 Pintos booting with 3,968 kB RAM...
 367 pages available in kernel pool.
 367 pages available in user pool.
-Calibrating timer...  19,584,000 loops/s.
+Calibrating timer...  24,448,000 loops/s.
 Boot complete.
 Executing 'priority-donate-chain':
 (priority-donate-chain) begin
@@ -25,9 +25,11 @@ Executing 'priority-donate-chain':
 (priority-donate-chain) main should have priority 21.  Actual priority: 0.
 (priority-donate-chain) interloper 7 finished.
 (priority-donate-chain) thread 1 got lock
-(priority-donate-chain) thread 1 should have priority 21. Actual priority: 3
+(priority-donate-chain) thread 1 should have priority 21. Actual priority: 110
+(priority-donate-chain) thread 1 finishing with priority 110.
 (priority-donate-chain) thread 2 got lock
-(priority-donate-chain) thread 2 should have priority 21. Actual priority: 6
+(priority-donate-chain) thread 2 should have priority 21. Actual priority: 110
+(priority-donate-chain) thread 2 finishing with priority 110.
 (priority-donate-chain) thread 3 got lock
 (priority-donate-chain) thread 3 should have priority 21. Actual priority: 9
 (priority-donate-chain) thread 4 got lock
@@ -43,13 +45,11 @@ Executing 'priority-donate-chain':
 (priority-donate-chain) thread 5 finishing with priority 15.
 (priority-donate-chain) thread 4 finishing with priority 12.
 (priority-donate-chain) thread 3 finishing with priority 9.
-(priority-donate-chain) thread 2 finishing with priority 6.
-(priority-donate-chain) thread 1 finishing with priority 3.
 (priority-donate-chain) main finishing with priority 0.
 (priority-donate-chain) end
 Execution of 'priority-donate-chain' complete.
-Timer: 113 ticks
-Thread: 0 idle ticks, 114 kernel ticks, 0 user ticks
-Console: 2630 characters output
+Timer: 99 ticks
+Thread: 0 idle ticks, 100 kernel ticks, 0 user ticks
+Console: 2637 characters output
 Keyboard: 0 keys pressed
 Powering off...

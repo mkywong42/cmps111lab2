@@ -80,8 +80,16 @@ lock_acquire(struct lock *lock)
     ASSERT(!intr_context());
     ASSERT(!lock_held_by_current_thread(lock));
 
+    if(lock->holder != NULL){
+        thread_donate_priority(lock->holder);
+    }
     semaphore_down(&lock->semaphore);
+    enum intr_level old_level = intr_disable();
+
+    thread_get_lock(lock);
     lock->holder = thread_current();
+    
+    intr_set_level(old_level);
 }
 
 /* 
@@ -118,8 +126,13 @@ lock_release(struct lock *lock)
     ASSERT(lock != NULL);
     ASSERT(lock_held_by_current_thread(lock));
 
+    enum intr_level old_level = intr_disable();
+
+    thread_remove_lock (lock);
     lock->holder = NULL;
     semaphore_up(&lock->semaphore);
+    
+    intr_set_level(old_level);
 }
 
 /* 
@@ -131,4 +144,14 @@ lock_held_by_current_thread(const struct lock *lock)
 {
     ASSERT(lock != NULL);
     return lock->holder == thread_current();
+}
+
+bool locks_compare(const struct list_elem *x,
+                     const struct list_elem *y,
+                     void *aux UNUSED)
+{
+  struct lock *lockx = list_entry (x, struct lock, elem);
+  struct lock *locky = list_entry (y, struct lock, elem);
+
+  return lockx->largest_priority > locky->largest_priority;
 }
