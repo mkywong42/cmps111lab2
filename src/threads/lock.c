@@ -62,6 +62,7 @@ lock_init(struct lock *lock)
     lock->holder = NULL;
     lock->largest_priority = 0;
     semaphore_init(&lock->semaphore, 1);
+    list_init(&lock->waiters);
 }
 
 /* 
@@ -80,7 +81,6 @@ lock_acquire(struct lock *lock)
     ASSERT(lock != NULL);
     ASSERT(!intr_context());
     ASSERT(!lock_held_by_current_thread(lock));
-
     if(lock->holder != NULL){
         thread_donate_priority(lock->holder);
     }
@@ -128,11 +128,10 @@ lock_release(struct lock *lock)
     ASSERT(lock_held_by_current_thread(lock));
 
     enum intr_level old_level = intr_disable();
-
+// printf("%s is releasing the lock\n", thread_name());
     thread_remove_lock (lock);
     lock->holder = NULL;
     semaphore_up(&lock->semaphore);
-    
     intr_set_level(old_level);
 }
 

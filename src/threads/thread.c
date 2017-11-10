@@ -364,7 +364,7 @@ thread_yield(void)
 
     old_level = intr_disable();
     if (cur != idle_thread){
-        //list_push_back(&ready_list, &cur->elem);
+        // list_push_back(&ready_list, &cur->elem);
 // printf("Inserting in yield\n");
         list_insert_ordered(&ready_list, &cur->elem, priority_value_more, NULL);
     }
@@ -394,7 +394,8 @@ thread_get_lock (struct lock *target_lock)
 {
     enum intr_level old_level = intr_disable();
     struct thread *t = thread_current();
-    list_push_back(&t->held_locks, &target_lock->elem); //might need to change
+    // list_push_back(&t->held_locks, &target_lock->elem); //might need to change
+    list_insert_ordered(&t->held_locks, &target_lock->elem, locks_compare, NULL);
     //might need to add more later
     // if(target_lock->largest_priority > t->priority){
     //     t->priority = target_lock -> largest_priority;
@@ -410,11 +411,14 @@ void
 thread_remove_lock(struct lock *target_lock)
 {
     enum intr_level old_level = intr_disable();
+// printf("%s is removing the lock\n", thread_name());
     list_remove(&target_lock->elem);
     //might need to add later
+// printf("%s priority is %d\n", thread_name(), thread_current()->priority);
     if(thread_current()->temp_priority != thread_current()->priority){
         thread_current()->priority = thread_current()->temp_priority;
     }
+// printf("%s priority is %d\n", thread_name(), thread_current()->priority);
     intr_set_level(old_level);
 }
 
@@ -424,7 +428,7 @@ thread_set_priority(int new_priority)
 {
     enum intr_level old_level = intr_disable();
     struct thread *curr = thread_current();
-    int old_priority = curr->priority;
+    // int old_priority = curr->priority;
     curr->temp_priority = new_priority;
     
     //may need to update locks largest priority
@@ -690,8 +694,22 @@ priority_value_more (const struct list_elem *a_, const struct list_elem *b_,
     struct thread *a = list_entry (a_, struct thread, elem);
     struct thread *b = list_entry (b_, struct thread, elem);
 
+    // if(a->priority > b->priority){
+    //     printf("%d is more than %d\n", a->priority, b->priority);
+    // }
    return a->priority > b->priority;
 }
+
+bool
+priority_value_more_or_equal (const struct list_elem *a_, const struct list_elem *b_,
+            void *aux UNUSED) 
+{
+    struct thread *a = list_entry (a_, struct thread, elem);
+    struct thread *b = list_entry (b_, struct thread, elem);
+
+   return a->priority >= b->priority;
+}
+
 /* Checks to see if preemption should take place
 *  If preemption should take place, the current thread yields the CPU
 *  Function does not allow interrupts during execution
@@ -706,7 +724,6 @@ void thread_should_preempt(void){
     intr_set_level(old_level);
 }
 
-// 
 void thread_donate_priority(struct thread *receiver){
     enum intr_level old_level = intr_disable();
 // printf("%s is donating to %s\n",thread_name(), receiver->name);
@@ -714,9 +731,11 @@ void thread_donate_priority(struct thread *receiver){
     thread_set_donation_priority(receiver);
 // printf("after donation: %d\n", receiver->priority);
     if(receiver->status == THREAD_READY){
-        list_remove(&receiver->elem);
-        list_insert_ordered(&ready_list, &receiver->elem, priority_value_more, NULL);
+        // list_remove(&receiver->elem);
+        // list_insert_ordered(&ready_list, &receiver->elem, priority_value_more_or_equal, NULL);
+        list_sort(&ready_list, priority_value_more_or_equal, NULL);
     }
+    // thread_should_preempt();
     intr_set_level(old_level);
 }
 
@@ -731,6 +750,7 @@ void thread_set_donation_priority(struct thread *receiver)
     int new_priority = receiver->temp_priority;
     if(thread_current()->priority > new_priority){
         new_priority = thread_current()->priority;
+        // list_insert_ordered(&ready_list, &thread_current()->elem, priority_value_more, NULL);
     }
     if(!list_empty(&receiver->held_locks)){
         list_sort(&receiver->held_locks, locks_compare, NULL);

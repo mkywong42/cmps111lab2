@@ -146,6 +146,8 @@ int thread_get_load_avg(void);
 /*Added*/
 bool priority_value_more (const struct list_elem *, const struct list_elem *,
                         void *);
+bool priority_value_more_or_equal (const struct list_elem *, const struct list_elem *,
+                        void *);
 void thread_should_preempt(void);
 
 void thread_get_lock (struct lock *);

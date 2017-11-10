@@ -11,6 +11,7 @@ struct lock {
     /*Added */
     struct list_elem elem;
     int largest_priority;
+    struct list waiters;
     /*End Added */
 };
 
